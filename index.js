@@ -239,7 +239,16 @@ app.post('/register', async (req, res) => {
   const f2aKey = null;
   const user = db.createRegisteredUser({ email: null, passwordHash, username, role, f2aKey });
   console.log('[register] success:', { uid: user.uid, username: user.username, role: user.role });
-  res.json({ uid: user.uid, username: user.username, role: user.role });
+  
+  // Generate token for auto-login after register
+  const token = jwt.sign({ uid: user.uid, role: user.role, email: user.email, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+  res.json({ 
+    token, 
+    uid: user.uid, 
+    username: user.username, 
+    role: user.role, 
+    email: user.email 
+  });
 });
 
 app.post('/login', async (req, res) => {
