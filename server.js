@@ -91,7 +91,7 @@ app.get('/users', (req, res) => {
   ]);
 });
 
-// Login endpoint (GET for testing)
+// Login endpoint
 app.get('/login', (req, res) => {
   res.json({
     success: true,
@@ -105,7 +105,42 @@ app.get('/login', (req, res) => {
   });
 });
 
-// 2FA endpoint (GET for testing)
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password required' });
+  }
+  
+  // Simple authentication logic
+  if (username === 'admin' && password === 'admin') {
+    res.json({
+      success: true,
+      user: {
+        uid: 'admin-001',
+        username: 'admin',
+        role: 'admin',
+        require2fa: true
+      },
+      token: 'fake-jwt-token-for-admin'
+    });
+  } else if (username === 'user' && password === 'user') {
+    res.json({
+      success: true,
+      user: {
+        uid: 'user-001',
+        username: 'user',
+        role: 'user',
+        require2fa: false
+      },
+      token: 'fake-jwt-token-for-user'
+    });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+// 2FA endpoint
 app.get('/verify-2fa', (req, res) => {
   res.json({
     success: true,
@@ -113,7 +148,30 @@ app.get('/verify-2fa', (req, res) => {
   });
 });
 
-// Register endpoint (GET for testing)
+app.post('/verify-2fa', (req, res) => {
+  const { username, code } = req.body;
+  
+  if (!username || !code) {
+    return res.status(400).json({ error: 'Username and code required' });
+  }
+  
+  // Simple 2FA verification (accept any 6-digit code)
+  if (code.length === 6 && /^\d+$/.test(code)) {
+    res.json({
+      success: true,
+      user: {
+        uid: 'admin-001',
+        username: username,
+        role: 'admin'
+      },
+      token: 'fake-jwt-token-for-admin-verified'
+    });
+  } else {
+    res.status(401).json({ error: 'Invalid 2FA code' });
+  }
+});
+
+// Register endpoint
 app.get('/register', (req, res) => {
   res.json({
     success: true,
@@ -127,6 +185,36 @@ app.get('/register', (req, res) => {
   });
 });
 
+app.post('/register', (req, res) => {
+  const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password required' });
+  }
+  
+  if (username.length < 3) {
+    return res.status(400).json({ error: 'Username must be at least 3 characters' });
+  }
+  
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+  
+  // Generate new user ID
+  const uid = `user-${Date.now()}`;
+  
+  res.json({
+    success: true,
+    user: {
+      uid: uid,
+      username: username,
+      role: 'user',
+      require2fa: false
+    },
+    token: `fake-jwt-token-for-${uid}`
+  });
+});
+
 // Me endpoint
 app.get('/me', (req, res) => {
   res.json({
@@ -136,6 +224,120 @@ app.get('/me', (req, res) => {
       username: 'admin',
       role: 'admin'
     }
+  });
+});
+
+// Feed endpoint
+app.get('/feed', (req, res) => {
+  res.json([]);
+});
+
+// Signup endpoint
+app.post('/signup', (req, res) => {
+  const { username } = req.body;
+  
+  if (!username) {
+    return res.status(400).json({ error: 'Username required' });
+  }
+  
+  if (username.length < 3) {
+    return res.status(400).json({ error: 'Username must be at least 3 characters' });
+  }
+  
+  const uid = `user-${Date.now()}`;
+  
+  res.json({
+    success: true,
+    uid: uid,
+    username: username
+  });
+});
+
+// Avatar upload endpoint
+app.post('/me/avatar', (req, res) => {
+  res.json({
+    success: true,
+    avatar_url: '/uploads/avatar-placeholder.jpg'
+  });
+});
+
+// Admin endpoints
+app.get('/admin', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Admin dashboard',
+    stats: {
+      users: 10,
+      photos: 25,
+      categories: 5
+    }
+  });
+});
+
+// QR endpoints
+app.get('/qr/generate', (req, res) => {
+  res.json({
+    success: true,
+    qr_code: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    value: '10p'
+  });
+});
+
+app.post('/qr/redeem', (req, res) => {
+  const { qr_code } = req.body;
+  
+  if (!qr_code) {
+    return res.status(400).json({ error: 'QR code required' });
+  }
+  
+  res.json({
+    success: true,
+    message: 'QR code redeemed successfully',
+    points: 10
+  });
+});
+
+// Auth endpoints
+app.post('/auth/send-otp', (req, res) => {
+  const { phone } = req.body;
+  
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number required' });
+  }
+  
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  res.json({
+    success: true,
+    message: 'OTP sent successfully',
+    otp: otp // For development only
+  });
+});
+
+app.post('/auth/verify-otp', (req, res) => {
+  const { phone, otp, username } = req.body;
+  
+  if (!phone || !otp) {
+    return res.status(400).json({ error: 'Phone and OTP required' });
+  }
+  
+  if (otp.length !== 6) {
+    return res.status(400).json({ error: 'Invalid OTP format' });
+  }
+  
+  if (!username) {
+    return res.status(400).json({ error: 'Username required for new users' });
+  }
+  
+  const uid = `user-${Date.now()}`;
+  
+  res.json({
+    success: true,
+    token: `fake-jwt-token-for-${uid}`,
+    uid: uid,
+    role: 'user',
+    phone: phone,
+    username: username
   });
 });
 
@@ -152,8 +354,16 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`  GET /categories`);
   console.log(`  GET /photos`);
   console.log(`  GET /users`);
-  console.log(`  GET /login`);
-  console.log(`  GET /verify-2fa`);
-  console.log(`  GET /register`);
   console.log(`  GET /me`);
+  console.log(`  GET /feed`);
+  console.log(`  GET /admin`);
+  console.log(`  GET /qr/generate`);
+  console.log(`  POST /login`);
+  console.log(`  POST /register`);
+  console.log(`  POST /verify-2fa`);
+  console.log(`  POST /signup`);
+  console.log(`  POST /me/avatar`);
+  console.log(`  POST /qr/redeem`);
+  console.log(`  POST /auth/send-otp`);
+  console.log(`  POST /auth/verify-otp`);
 });
