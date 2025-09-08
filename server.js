@@ -87,6 +87,8 @@ app.get('/photos', (req, res) => {
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   
+  console.log('Login attempt:', { username, password: password ? '***' : 'empty' });
+  
   // Simple admin login for testing
   if (username === 'admin' && password === 'admin') {
     res.json({
