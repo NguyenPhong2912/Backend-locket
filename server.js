@@ -83,48 +83,34 @@ app.get('/photos', (req, res) => {
   res.json([]);
 });
 
-// Login endpoint
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  
-  console.log('Login attempt:', { username, password: password ? '***' : 'empty' });
-  
-  // Simple admin login for testing
-  if (username === 'admin' && password === 'admin') {
-    res.json({
-      success: true,
-      user: {
-        uid: 'admin-001',
-        username: 'admin',
-        role: 'admin',
-        require2fa: true
-      },
-      token: 'fake-jwt-token-for-testing'
-    });
-  } else {
-    res.status(401).json({
-      success: false,
-      error: 'Invalid credentials'
-    });
-  }
+// Users endpoint
+app.get('/users', (req, res) => {
+  res.json([
+    { id: 'admin-001', username: 'admin', role: 'admin' },
+    { id: 'user-001', username: 'user1', role: 'user' }
+  ]);
 });
 
-// 2FA endpoint
-app.post('/verify-2fa', (req, res) => {
-  const { code } = req.body;
-  
-  // Simple 2FA for testing
-  if (code === '2006') {
-    res.json({
-      success: true,
-      message: '2FA verified successfully'
-    });
-  } else {
-    res.status(401).json({
-      success: false,
-      error: 'Invalid 2FA code'
-    });
-  }
+// Login endpoint (GET for testing)
+app.get('/login', (req, res) => {
+  res.json({
+    success: true,
+    user: {
+      uid: 'admin-001',
+      username: 'admin',
+      role: 'admin',
+      require2fa: true
+    },
+    token: 'fake-jwt-token-for-testing'
+  });
+});
+
+// 2FA endpoint (GET for testing)
+app.get('/verify-2fa', (req, res) => {
+  res.json({
+    success: true,
+    message: '2FA verified successfully'
+  });
 });
 
 // Start server
