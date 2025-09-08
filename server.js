@@ -1,8 +1,69 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+// Simple JSON file-based database
+const DATA_DIR = path.join(__dirname, 'data');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// Initialize users file if it doesn't exist
+if (!fs.existsSync(USERS_FILE)) {
+  const defaultUsers = [
+    { uid: 'admin-001', username: 'admin', password: 'admin', role: 'admin', require2fa: true },
+    { uid: 'user-001', username: 'user', password: 'user', role: 'user', require2fa: false }
+  ];
+  fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
+}
+
+// Helper functions for user management
+const readUsers = () => {
+  try {
+    const data = fs.readFileSync(USERS_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error('Error reading users:', err);
+    return [];
+  }
+};
+
+const writeUsers = (users) => {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+    return true;
+  } catch (err) {
+    console.error('Error writing users:', err);
+    return false;
+  }
+};
+
+const findUserByUsername = (username) => {
+  const users = readUsers();
+  return users.find(user => user.username === username);
+};
+
+const createUser = (username, password, role = 'user') => {
+  const users = readUsers();
+  const uid = `user-${Date.now()}`;
+  const newUser = {
+    uid,
+    username,
+    password, // In production, this should be hashed
+    role,
+    require2fa: role === 'admin'
+  };
+  users.push(newUser);
+  writeUsers(users);
+  return newUser;
+};
 
 // Middleware
 app.use(cors({
@@ -112,32 +173,23 @@ app.post('/login', (req, res) => {
     return res.status(400).json({ error: 'Username and password required' });
   }
   
-  // Simple authentication logic
-  if (username === 'admin' && password === 'admin') {
-    res.json({
-      success: true,
-      user: {
-        uid: 'admin-001',
-        username: 'admin',
-        role: 'admin',
-        require2fa: true
-      },
-      token: 'fake-jwt-token-for-admin'
-    });
-  } else if (username === 'user' && password === 'user') {
-    res.json({
-      success: true,
-      user: {
-        uid: 'user-001',
-        username: 'user',
-        role: 'user',
-        require2fa: false
-      },
-      token: 'fake-jwt-token-for-user'
-    });
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
+  // Find user in database
+  const user = findUserByUsername(username);
+  
+  if (!user || user.password !== password) {
+    return res.status(401).json({ error: 'Invalid credentials' });
   }
+  
+  res.json({
+    success: true,
+    user: {
+      uid: user.uid,
+      username: user.username,
+      role: user.role,
+      require2fa: user.require2fa
+    },
+    token: `fake-jwt-token-for-${user.uid}`
+  });
 });
 
 // 2FA endpoint
@@ -155,16 +207,23 @@ app.post('/verify-2fa', (req, res) => {
     return res.status(400).json({ error: 'Username and code required' });
   }
   
+  // Find user in database
+  const user = findUserByUsername(username);
+  
+  if (!user || !user.require2fa) {
+    return res.status(400).json({ error: 'User not found or 2FA not required' });
+  }
+  
   // Simple 2FA verification (accept any 6-digit code)
   if (code.length === 6 && /^\d+$/.test(code)) {
     res.json({
       success: true,
       user: {
-        uid: 'admin-001',
-        username: username,
-        role: 'admin'
+        uid: user.uid,
+        username: user.username,
+        role: user.role
       },
-      token: 'fake-jwt-token-for-admin-verified'
+      token: `fake-jwt-token-for-${user.uid}-verified`
     });
   } else {
     res.status(401).json({ error: 'Invalid 2FA code' });
@@ -200,18 +259,24 @@ app.post('/register', (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
   
-  // Generate new user ID
-  const uid = `user-${Date.now()}`;
+  // Check if user already exists
+  const existingUser = findUserByUsername(username);
+  if (existingUser) {
+    return res.status(400).json({ error: 'Username already exists' });
+  }
+  
+  // Create new user
+  const newUser = createUser(username, password, 'user');
   
   res.json({
     success: true,
     user: {
-      uid: uid,
-      username: username,
-      role: 'user',
-      require2fa: false
+      uid: newUser.uid,
+      username: newUser.username,
+      role: newUser.role,
+      require2fa: newUser.require2fa
     },
-    token: `fake-jwt-token-for-${uid}`
+    token: `fake-jwt-token-for-${newUser.uid}`
   });
 });
 
