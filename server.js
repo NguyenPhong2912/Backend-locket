@@ -127,6 +127,18 @@ app.get('/register', (req, res) => {
   });
 });
 
+// Me endpoint
+app.get('/me', (req, res) => {
+  res.json({
+    success: true,
+    user: {
+      uid: 'admin-001',
+      username: 'admin',
+      role: 'admin'
+    }
+  });
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Locket Backend running on port ${PORT}`);
@@ -143,4 +155,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`  GET /login`);
   console.log(`  GET /verify-2fa`);
   console.log(`  GET /register`);
+  console.log(`  GET /me`);
 });
