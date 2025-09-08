@@ -406,15 +406,31 @@ app.post('/auth/verify-otp', (req, res) => {
   });
 });
 
+// Debug endpoint to check database
+app.get('/debug/users', (req, res) => {
+  const users = readUsers();
+  res.json({
+    success: true,
+    users: users,
+    count: users.length,
+    dataDir: DATA_DIR,
+    usersFile: USERS_FILE,
+    fileExists: fs.existsSync(USERS_FILE)
+  });
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Locket Backend running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
+  console.log(`📁 Data directory: ${DATA_DIR}`);
+  console.log(`📄 Users file: ${USERS_FILE}`);
   console.log(`📡 Available endpoints:`);
   console.log(`  GET /health`);
   console.log(`  GET /`);
   console.log(`  GET /test`);
+  console.log(`  GET /debug/users`);
   console.log(`  GET /gold/plans`);
   console.log(`  GET /categories`);
   console.log(`  GET /photos`);
