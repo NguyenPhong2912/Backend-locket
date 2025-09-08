@@ -113,9 +113,34 @@ app.get('/verify-2fa', (req, res) => {
   });
 });
 
+// Register endpoint (GET for testing)
+app.get('/register', (req, res) => {
+  res.json({
+    success: true,
+    user: {
+      uid: 'user-002',
+      username: 'newuser',
+      role: 'user',
+      require2fa: false
+    },
+    token: 'fake-jwt-token-for-new-user'
+  });
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Locket Backend running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
+  console.log(`📡 Available endpoints:`);
+  console.log(`  GET /health`);
+  console.log(`  GET /`);
+  console.log(`  GET /test`);
+  console.log(`  GET /gold/plans`);
+  console.log(`  GET /categories`);
+  console.log(`  GET /photos`);
+  console.log(`  GET /users`);
+  console.log(`  GET /login`);
+  console.log(`  GET /verify-2fa`);
+  console.log(`  GET /register`);
 });
