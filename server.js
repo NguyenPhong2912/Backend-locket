@@ -6,52 +6,27 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Simple JSON file-based database
-const DATA_DIR = path.join(__dirname, 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// Initialize users file if it doesn't exist
-if (!fs.existsSync(USERS_FILE)) {
-  const defaultUsers = [
-    { uid: 'admin-001', username: 'admin', password: 'admin', role: 'admin', require2fa: true },
-    { uid: 'user-001', username: 'user', password: 'user', role: 'user', require2fa: false }
-  ];
-  fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
-}
+// In-memory database for Render deployment
+let users = [
+  { uid: 'admin-001', username: 'admin', password: 'admin', role: 'admin', require2fa: true },
+  { uid: 'user-001', username: 'user', password: 'user', role: 'user', require2fa: false }
+];
 
 // Helper functions for user management
 const readUsers = () => {
-  try {
-    const data = fs.readFileSync(USERS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error('Error reading users:', err);
-    return [];
-  }
+  return users;
 };
 
-const writeUsers = (users) => {
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-    return true;
-  } catch (err) {
-    console.error('Error writing users:', err);
-    return false;
-  }
+const writeUsers = (newUsers) => {
+  users = newUsers;
+  return true;
 };
 
 const findUserByUsername = (username) => {
-  const users = readUsers();
   return users.find(user => user.username === username);
 };
 
 const createUser = (username, password, role = 'user') => {
-  const users = readUsers();
   const uid = `user-${Date.now()}`;
   const newUser = {
     uid,
@@ -61,7 +36,6 @@ const createUser = (username, password, role = 'user') => {
     require2fa: role === 'admin'
   };
   users.push(newUser);
-  writeUsers(users);
   return newUser;
 };
 
@@ -408,14 +382,12 @@ app.post('/auth/verify-otp', (req, res) => {
 
 // Debug endpoint to check database
 app.get('/debug/users', (req, res) => {
-  const users = readUsers();
+  const currentUsers = readUsers();
   res.json({
     success: true,
-    users: users,
-    count: users.length,
-    dataDir: DATA_DIR,
-    usersFile: USERS_FILE,
-    fileExists: fs.existsSync(USERS_FILE)
+    users: currentUsers,
+    count: currentUsers.length,
+    message: 'In-memory database'
   });
 });
 
@@ -424,8 +396,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Locket Backend running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
-  console.log(`📁 Data directory: ${DATA_DIR}`);
-  console.log(`📄 Users file: ${USERS_FILE}`);
+  console.log(`💾 Using in-memory database`);
   console.log(`📡 Available endpoints:`);
   console.log(`  GET /health`);
   console.log(`  GET /`);
