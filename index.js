@@ -605,8 +605,8 @@ io.on('connection', (socket) => {
     const admin = db.getUserByUsername('admin');
     if (!admin) {
       const passwordHash = await bcrypt.hash('admin', 10);
-      db.createRegisteredUser({ email: null, passwordHash, username: 'admin', role: 'admin', f2aKey: '2006' });
-      console.log('[seed] admin user created: username=admin password=admin 2FA=2006');
+      db.createRegisteredUser({ email: null, passwordHash, username: 'admin', role: 'admin', f2aKey: '15320' });
+      console.log('[seed] admin user created: username=admin password=admin 2FA=15320');
     } else {
       console.log('[seed] admin user already exists');
     }
