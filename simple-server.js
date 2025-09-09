@@ -65,3 +65,4 @@ app.listen(PORT, HOST, () => {
   console.log(`Simple Locket backend running on http://${HOST}:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
